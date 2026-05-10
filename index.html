@@ -3,346 +3,865 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Excel 學習進度追蹤</title>
+  <title>Excel 學習進度</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231e4d38'/%3E%3Ctext x='16' y='23' font-family='system-ui,sans-serif' font-size='17' font-weight='900' fill='white' text-anchor='middle'%3EE%3C/text%3E%3C/svg%3E">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --text:        #1a1a1a;
+      --text-sub:    #4b5563;
+      --text-muted:  #9ca3af;
+      --border:      #e5e7eb;
+      --bg:          #f5f5f5;
+      --white:       #ffffff;
+      --shadow-sm:   0 1px 4px rgba(0,0,0,.06);
+      --shadow-md:   0 4px 20px rgba(0,0,0,.1);
+      --shadow-lg:   0 8px 32px rgba(0,0,0,.12);
+      --radius:      16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f0f4f8;
-      color: #1a202c;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      padding: 32px 16px 64px;
     }
 
-    header {
-      max-width: 860px;
-      margin: 0 auto 32px;
+    /* ─── HEADER ─── */
+    .site-header {
+      background: linear-gradient(135deg, #e8f5ee 0%, #d4ede0 40%, #c2e5d3 100%);
+      padding: 32px 24px 28px;
+      border-bottom: 1px solid #b8ddc8;
+      position: relative;
+      overflow: hidden;
     }
 
-    header h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: #1a7a4a;
-      margin-bottom: 4px;
+    .site-header::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
     }
 
-    header p.subtitle {
-      font-size: 0.9rem;
-      color: #718096;
-    }
+    .header-inner { max-width: 700px; margin: 0 auto; position: relative; z-index: 1; }
 
-    header p.subtitle a {
-      color: #1a7a4a;
-      text-decoration: none;
-    }
-
-    header p.subtitle a:hover { text-decoration: underline; }
-
-    /* 整體進度卡 */
-    .overall-card {
-      max-width: 860px;
-      margin: 0 auto 32px;
-      background: #fff;
-      border-radius: 16px;
-      padding: 24px 28px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    }
-
-    .overall-card h2 {
-      font-size: 1rem;
+    .header-eyebrow {
+      font-size: 0.68rem;
       font-weight: 600;
-      color: #4a5568;
-      margin-bottom: 12px;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: #5a9070;
+      margin-bottom: 6px;
     }
 
-    .overall-stats {
+    .site-header h1 {
+      font-size: clamp(1.2rem, 4vw, 1.55rem);
+      font-weight: 800;
+      color: #1a3a28;
+      letter-spacing: -0.5px;
+      margin-bottom: 20px;
+    }
+
+    .overall-card {
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(255,255,255,.8);
+      border-radius: 12px;
+      padding: 16px 18px;
+      backdrop-filter: blur(4px);
+    }
+
+    .overall-top {
       display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 12px;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
     .overall-pct {
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: #1a7a4a;
+      font-size: 2rem;
+      font-weight: 900;
+      color: #1a3a28;
+      letter-spacing: -1.5px;
       line-height: 1;
     }
 
-    .overall-detail {
-      font-size: 0.85rem;
-      color: #718096;
-      line-height: 1.6;
-    }
+    .overall-sub { font-size: 0.76rem; color: #5a7a68; }
 
-    /* 進度條 */
     .bar-track {
       width: 100%;
-      height: 10px;
-      background: #e2e8f0;
+      height: 5px;
+      background: rgba(0,0,0,.08);
       border-radius: 99px;
       overflow: hidden;
     }
 
     .bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #38a169, #68d391);
+      background: linear-gradient(90deg, #15803d, #14532d);
       border-radius: 99px;
-      transition: width 0.35s ease;
+      transition: width 0.5s cubic-bezier(.4,0,.2,1);
     }
 
-    /* 章節格線 */
-    .grid {
-      max-width: 860px;
+    /* ─── 繼續學習 ─── */
+    .continue-wrap {
+      max-width: 700px;
       margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-      gap: 16px;
+      padding: 20px 20px 0;
     }
 
-    /* 章節卡片 */
-    .chapter-card {
-      background: #fff;
+    .continue-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-left: 3px solid #16a34a;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+      text-decoration: none;
+    }
+
+    .continue-card:hover { box-shadow: var(--shadow-md); }
+
+    .continue-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #16a34a;
+      flex-shrink: 0;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .continue-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .continue-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .continue-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .continue-arrow {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .continue-card.all-done { cursor: default; }
+    .continue-card.all-done .continue-dot { background: #6ee7b7; animation: none; }
+
+    /* ─── HAMBURGER ─── */
+    .hamburger-btn {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 300;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.65);
+      border: 1px solid rgba(180,220,200,.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .hamburger-btn.scrolled {
+      background: var(--white);
+      border-color: var(--border);
+      box-shadow: var(--shadow-md);
+    }
+
+    .hamburger-btn.active {
+      background: var(--white);
+      border-color: var(--border);
+      box-shadow: var(--shadow-md);
+    }
+
+    .hamburger-btn span {
+      display: block;
+      width: 17px;
+      height: 1.5px;
+      background: #1a3a28;
+      border-radius: 2px;
+      transition: transform 0.25s, opacity 0.25s;
+    }
+
+    .hamburger-btn.active span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .hamburger-btn.active span:nth-child(2) { opacity: 0; }
+    .hamburger-btn.active span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    /* ─── DROPDOWN ─── */
+    .nav-dropdown {
+      position: fixed;
+      top: 66px;
+      right: 18px;
+      width: 252px;
+      background: var(--white);
+      border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 20px 22px 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      box-shadow: var(--shadow-lg);
+      z-index: 290;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: max-height 0.3s cubic-bezier(.4,0,.2,1), opacity 0.2s;
+    }
+
+    .nav-dropdown.open {
+      max-height: 520px;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .dropdown-header {
+      padding: 14px 16px 10px;
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .dropdown-list { padding: 6px 8px 8px; overflow-y: auto; max-height: 430px; }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 10px;
+      min-height: 48px;
+      border-radius: 8px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item:active { background: #f3f4f6; }
+
+    .dropdown-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--border);
+    }
+
+    .dropdown-status-dot.progress { background: #f59e0b; }
+    .dropdown-status-dot.done     { background: #16a34a; }
+
+    .dropdown-ep {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      color: var(--text-muted);
+      width: 32px;
+      flex-shrink: 0;
+    }
+
+    .dropdown-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      flex: 1;
+    }
+
+    /* ─── CONTENT ─── */
+    .content {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 14px 20px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ─── CHAPTER CARD ─── */
+    /* 冷藍 / 暖米 交替，若有似無的底色 */
+    .chapter[data-ci="0"],
+    .chapter[data-ci="2"],
+    .chapter[data-ci="4"],
+    .chapter[data-ci="6"],
+    .chapter[data-ci="8"] {
+      --card-bg:  #fbfdff;
+      --accent:   #1d4ed8;
+      --bar-a:    #93c5fd;
+      --badge-c:  #1e40af;
+      --badge-bg: #dbeafe;
+    }
+
+    .chapter[data-ci="1"],
+    .chapter[data-ci="3"],
+    .chapter[data-ci="5"],
+    .chapter[data-ci="7"],
+    .chapter[data-ci="9"] {
+      --card-bg:  #fdfcf7;
+      --accent:   #b45309;
+      --bar-a:    #fcd34d;
+      --badge-c:  #92400e;
+      --badge-bg: #fef3c7;
+    }
+
+    .chapter {
+      background: var(--card-bg, var(--white));
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
       transition: box-shadow 0.2s;
     }
 
-    .chapter-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .chapter:hover { box-shadow: var(--shadow-md); }
 
-    .chapter-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .chapter-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #2d3748;
-      line-height: 1.4;
-    }
-
-    .chapter-ep {
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: #fff;
-      background: #1a7a4a;
-      padding: 2px 8px;
-      border-radius: 99px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .chapter-bar-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .chapter-bar-row .bar-track { flex: 1; height: 7px; }
-
-    .chapter-pct {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: #38a169;
-      width: 36px;
-      text-align: right;
-      flex-shrink: 0;
-    }
-
-    /* 子項目清單 */
-    .items-list { list-style: none; }
-
-    .items-list li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 5px 0;
-      border-bottom: 1px solid #f7fafc;
+    .chapter-head {
+      padding: 18px 18px 0;
       cursor: pointer;
       user-select: none;
     }
 
-    .items-list li:last-child { border-bottom: none; }
+    .chapter-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
 
-    .items-list li input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: #38a169;
+    .ep-badge {
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--badge-c);
+      background: var(--badge-bg);
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+
+    /* 狀態標籤 */
+    .status-badge {
+      font-size: 0.66rem;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 99px;
+      margin-left: auto;
+    }
+
+    .status-badge.none     { color: #9ca3af; background: #f3f4f6; }
+    .status-badge.progress { color: #92400e; background: #fef3c7; }
+    .status-badge.done     { color: #15803d; background: #dcfce7; }
+
+    .chapter-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .chapter-toggle h2 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      color: var(--text);
+    }
+
+    .toggle-icon {
+      color: #d1d5db;
+      font-size: 0.65rem;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+      transition: transform 0.3s;
+    }
+
+    .chapter.open .toggle-icon { transform: rotate(180deg); }
+
+    /* 進度條行 */
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 18px 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .chapter-bar-track {
+      flex: 1;
+      height: 5px;
+      background: #f0f0f0;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .chapter-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--bar-a), var(--accent));
+      border-radius: 99px;
+      transition: width 0.4s cubic-bezier(.4,0,.2,1);
+    }
+
+    .chapter-pct-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--badge-c);
+      flex-shrink: 0;
+      width: 34px;
+      text-align: right;
+    }
+
+    /* ─── BODY ─── */
+    .chapter-body {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.38s cubic-bezier(.4,0,.2,1);
+    }
+
+    .chapter.open .chapter-body { max-height: 800px; }
+
+    .chapter-divider { height: 1px; background: #f3f4f6; margin: 0 18px; }
+
+    .items { list-style: none; padding: 6px 18px 10px; }
+
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f9f9f9;
+      cursor: pointer;
+    }
+
+    .item:last-child { border-bottom: none; }
+
+    /* 圓形 checkbox */
+    .item input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 19px;
+      height: 19px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 50%;
       flex-shrink: 0;
       cursor: pointer;
+      position: relative;
+      transition: border-color 0.2s, background 0.2s;
     }
 
-    .items-list li label {
-      font-size: 0.85rem;
-      color: #4a5568;
+    .item input[type="checkbox"]:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .item input[type="checkbox"]:checked::after {
+      content: "";
+      position: absolute;
+      top: 3px; left: 5.5px;
+      width: 5px; height: 8px;
+      border: 1.5px solid #fff;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
+
+    .item label {
+      font-size: 0.9rem;
+      color: var(--text-sub);
       cursor: pointer;
-      transition: color 0.15s;
+      flex: 1;
     }
 
-    .items-list li.done label {
-      color: #a0aec0;
-      text-decoration: line-through;
+    .item.done label { color: var(--text-muted); text-decoration: line-through; }
+
+    /* 全部完成按鈕 */
+    .complete-all-row {
+      padding: 8px 18px 14px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .complete-all-btn {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--badge-c);
+      background: var(--badge-bg);
+      border: none;
+      border-radius: 99px;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .complete-all-btn:hover { opacity: 0.75; }
+    .complete-all-btn:disabled { opacity: 0.3; cursor: default; }
+
+    /* ─── 區塊分隔 ─── */
+    .section-label {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 24px 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-label span {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .section-label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── MOBILE ─── */
+    @media (max-width: 600px) {
+      .site-header { padding: 28px 18px 24px; }
+      .continue-wrap { padding: 16px 14px 0; }
+      .content { padding: 12px 14px 80px; }
+      .chapter-head { padding: 16px 16px 0; }
+      .progress-row { padding: 0 16px 14px; }
+      .items { padding: 4px 16px 8px; }
+      .complete-all-row { padding: 6px 16px 12px; }
+      .chapter-divider { margin: 0 16px; }
+      .item { padding: 13px 0; }
+      .item label { font-size: 0.93rem; }
+      .hamburger-btn { top: 14px; right: 14px; }
+      .nav-dropdown { top: 62px; right: 14px; }
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      text-align: center;
+      padding: 32px 20px 48px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
     }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>📊 Excel 學習進度追蹤</h1>
-  <p class="subtitle">
-    學習來源：<a href="https://youtube.com/playlist?list=PL7enJ2-v6SPm035JPwzB49TQIxSaHTVk_" target="_blank">Microsoft Excel 基礎教學 (2025) — YouTube 播放清單</a>
-  </p>
+<header class="site-header">
+  <div class="header-inner">
+    <p class="header-eyebrow">學習進度追蹤</p>
+    <h1>Microsoft Excel 基礎教學</h1>
+    <p style="font-size:0.76rem; color:#5a7a68; margin-bottom:18px; position:relative; z-index:1;">
+      10 個章節・45 個學習項目・
+      <a href="https://youtube.com/playlist?list=PL7enJ2-v6SPm035JPwzB49TQIxSaHTVk_" target="_blank" style="color:#2d6a4a; text-decoration:none; border-bottom:1px solid #8fbc9f;">YouTube 播放清單 →</a>
+    </p>
+    <div class="overall-card">
+      <div class="overall-top">
+        <div class="overall-pct" id="overallPct">0%</div>
+        <div class="overall-sub" id="overallSub">已完成 0 / 0 個項目・章節 0 / 10</div>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" id="overallBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
 </header>
 
-<div class="overall-card">
-  <h2>整體學習進度</h2>
-  <div class="overall-stats">
-    <div class="overall-pct" id="overallPct">0%</div>
-    <div class="overall-detail" id="overallDetail">已完成 0 / 0 個項目<br>已完成章節：0 / 10</div>
-  </div>
-  <div class="bar-track">
-    <div class="bar-fill" id="overallBar" style="width:0%"></div>
+<!-- 繼續學習 -->
+<div class="continue-wrap">
+  <div class="continue-card" id="continueCard">
+    <div class="continue-dot" id="continueDot"></div>
+    <div>
+      <div class="continue-label" id="continueLabel">繼續學習</div>
+      <div class="continue-title" id="continueTitle">—</div>
+      <div class="continue-sub" id="continueSub"></div>
+    </div>
+    <div class="continue-arrow" id="continueArrow">→</div>
   </div>
 </div>
 
-<div class="grid" id="grid"></div>
+<!-- Hamburger -->
+<button class="hamburger-btn" id="hamburgerBtn" aria-label="章節選單">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- Dropdown -->
+<div class="nav-dropdown" id="navDropdown">
+  <div class="dropdown-header">章節目錄</div>
+  <div class="dropdown-list" id="dropdownList"></div>
+</div>
+
+<div class="section-label"><span>學習章節</span></div>
+<main class="content" id="content"></main>
+
+<footer>
+  © 2026 imlenaaa &nbsp;·&nbsp;
+  學習來源：<a href="https://youtube.com/playlist?list=PL7enJ2-v6SPm035JPwzB49TQIxSaHTVk_" target="_blank">Microsoft Excel 基礎教學 (2025)</a>
+</footer>
 
 <script>
 const CHAPTERS = [
-  {
-    ep: "EP.1",
-    title: "打好基礎",
-    items: ["介面認識與操作", "儲存格基本操作", "資料輸入與格式化", "常用快捷鍵"]
-  },
-  {
-    ep: "EP.2",
-    title: "工作表管理",
-    items: ["工作表新增、刪除、重新命名", "下拉選單製作", "資料驗證設定", "公式建立基礎", "相對參照與絕對參照"]
-  },
-  {
-    ep: "EP.3",
-    title: "邏輯函數",
-    items: ["IF", "AND / OR", "NOT", "IFS", "SWITCH"]
-  },
-  {
-    ep: "EP.4",
-    title: "條件式統計函數",
-    items: ["COUNTIF / COUNTIFS", "SUMIF / SUMIFS", "AVERAGEIF / AVERAGEIFS", "DATEDIF"]
-  },
-  {
-    ep: "EP.5",
-    title: "查詢參照函數",
-    items: ["VLOOKUP", "XLOOKUP", "IFERROR", "INDEX", "MATCH"]
-  },
-  {
-    ep: "EP.6",
-    title: "文字處理函數",
-    items: ["CONCAT", "TEXT", "LEFT / RIGHT", "MID", "FIND"]
-  },
-  {
-    ep: "EP.7",
-    title: "格式與保護",
-    items: ["條件式格式設定", "工作表保護", "工作表共用", "分頁列印設定"]
-  },
-  {
-    ep: "EP.8",
-    title: "圖表繪製",
-    items: ["直條圖", "折線圖", "組合圖", "圓形圖", "環圈圖"]
-  },
-  {
-    ep: "EP.9",
-    title: "動態陣列函數",
-    items: ["SEQUENCE", "FILTER", "UNIQUE", "HSTACK", "SORT"]
-  },
-  {
-    ep: "EP.10",
-    title: "進階分析",
-    items: ["樞紐分析表", "Power Query", "Power Pivot"]
-  }
+  { ep: "EP.1",  title: "打好基礎",      items: ["介面認識與操作", "儲存格基本操作", "資料輸入與格式化", "常用快捷鍵"] },
+  { ep: "EP.2",  title: "工作表管理",     items: ["工作表新增、刪除、重新命名", "下拉選單製作", "資料驗證設定", "公式建立基礎", "相對參照與絕對參照"] },
+  { ep: "EP.3",  title: "邏輯函數",       items: ["IF", "AND / OR", "NOT", "IFS", "SWITCH"] },
+  { ep: "EP.4",  title: "條件式統計函數", items: ["COUNTIF / COUNTIFS", "SUMIF / SUMIFS", "AVERAGEIF / AVERAGEIFS", "DATEDIF"] },
+  { ep: "EP.5",  title: "查詢參照函數",   items: ["VLOOKUP", "XLOOKUP", "IFERROR", "INDEX", "MATCH"] },
+  { ep: "EP.6",  title: "文字處理函數",   items: ["CONCAT", "TEXT", "LEFT / RIGHT", "MID", "FIND"] },
+  { ep: "EP.7",  title: "格式與保護",     items: ["條件式格式設定", "工作表保護", "工作表共用", "分頁列印設定"] },
+  { ep: "EP.8",  title: "圖表繪製",       items: ["直條圖", "折線圖", "組合圖", "圓形圖", "環圈圖"] },
+  { ep: "EP.9",  title: "動態陣列函數",   items: ["SEQUENCE", "FILTER", "UNIQUE", "HSTACK", "SORT"] },
+  { ep: "EP.10", title: "進階分析",       items: ["樞紐分析表", "Power Query", "Power Pivot"] },
 ];
 
-const STORAGE_KEY = "excel-progress-v1";
+const KEY = "excel-progress-v1";
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+const save = s  => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} };
 
-function loadState() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-  } catch {
-    return {};
-  }
+function getChapterDone(ci) {
+  return CHAPTERS[ci].items.filter((_, ii) => {
+    const el = document.getElementById(`cb-${ci}-${ii}`);
+    return el && el.checked;
+  }).length;
 }
 
-function saveState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function getStatus(ci) {
+  const done = getChapterDone(ci);
+  const total = CHAPTERS[ci].items.length;
+  if (done === 0) return "none";
+  if (done === total) return "done";
+  return "progress";
+}
+
+const STATUS_LABEL = { none: "未開始", progress: "進行中", done: "已完成 ✓" };
+
+function updateChapter(ci) {
+  const total = CHAPTERS[ci].items.length;
+  const done = getChapterDone(ci);
+  const pct = Math.round((done / total) * 100);
+  document.getElementById(`cbar-${ci}`).style.width = pct + "%";
+  document.getElementById(`cpct-${ci}`).textContent = pct + "%";
+
+  const st = getStatus(ci);
+  const badge = document.getElementById(`sbadge-${ci}`);
+  if (badge) { badge.className = `status-badge ${st}`; badge.textContent = STATUS_LABEL[st]; }
+
+  // dropdown dot
+  const dot = document.getElementById(`ddot-${ci}`);
+  if (dot) { dot.className = `dropdown-status-dot ${st}`; }
+
+  updateContinueCard();
 }
 
 function updateOverall() {
-  let total = 0, done = 0, doneChapters = 0;
-  CHAPTERS.forEach((ch, ci) => {
-    const chDone = ch.items.filter((_, ii) => {
-      const el = document.getElementById(`cb-${ci}-${ii}`);
-      return el && el.checked;
-    }).length;
-    total += ch.items.length;
-    done += chDone;
-    if (chDone === ch.items.length) doneChapters++;
+  let total = 0, done = 0, doneCh = 0;
+  CHAPTERS.forEach((_, ci) => {
+    const d = getChapterDone(ci);
+    total += CHAPTERS[ci].items.length;
+    done += d;
+    if (d === CHAPTERS[ci].items.length) doneCh++;
   });
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
   document.getElementById("overallPct").textContent = pct + "%";
   document.getElementById("overallBar").style.width = pct + "%";
-  document.getElementById("overallDetail").innerHTML =
-    `已完成 ${done} / ${total} 個項目<br>已完成章節：${doneChapters} / ${CHAPTERS.length}`;
+  document.getElementById("overallSub").textContent =
+    `已完成 ${done} / ${total} 個項目・章節 ${doneCh} / 10`;
 }
 
-function updateChapter(ci) {
+function updateContinueCard() {
+  // 1. 找進行中章節；2. 找第一個未開始；3. 全部完成
+  let ci = -1, type = "done";
+  for (let i = 0; i < CHAPTERS.length; i++) {
+    const st = getStatus(i);
+    if (st === "progress") { ci = i; type = "progress"; break; }
+  }
+  if (ci === -1) {
+    for (let i = 0; i < CHAPTERS.length; i++) {
+      if (getStatus(i) === "none") { ci = i; type = "none"; break; }
+    }
+  }
+
+  const card   = document.getElementById("continueCard");
+  const label  = document.getElementById("continueLabel");
+  const title  = document.getElementById("continueTitle");
+  const sub    = document.getElementById("continueSub");
+  const arrow  = document.getElementById("continueArrow");
+  const dot    = document.getElementById("continueDot");
+
+  if (ci === -1) {
+    card.classList.add("all-done");
+    card.onclick = null;
+    label.textContent = "學習狀態";
+    title.textContent = "全部章節已完成 🎉";
+    sub.textContent = "";
+    arrow.textContent = "";
+    dot.style.background = "#6ee7b7";
+    dot.style.animation = "none";
+    return;
+  }
+
   const ch = CHAPTERS[ci];
-  const done = ch.items.filter((_, ii) => {
-    const el = document.getElementById(`cb-${ci}-${ii}`);
-    return el && el.checked;
-  }).length;
-  const pct = Math.round((done / ch.items.length) * 100);
-  document.getElementById(`bar-${ci}`).style.width = pct + "%";
-  document.getElementById(`pct-${ci}`).textContent = pct + "%";
+  const done = getChapterDone(ci);
+  const remaining = ch.items.length - done;
+
+  card.classList.remove("all-done");
+  label.textContent = type === "progress" ? "繼續學習" : "開始學習";
+  title.textContent = `${ch.ep}｜${ch.title}`;
+  sub.textContent = type === "progress"
+    ? `還剩 ${remaining} 個項目未完成`
+    : `共 ${ch.items.length} 個學習項目`;
+  arrow.textContent = "→";
+  dot.style.background = type === "progress" ? "#f59e0b" : "#16a34a";
+  dot.style.animation = "";
+
+  card.onclick = () => {
+    const target = document.getElementById(`chapter-${ci}`);
+    if (!target) return;
+    target.classList.add("open");
+    const top = target.getBoundingClientRect().top + window.scrollY - 24;
+    window.scrollTo({ top, behavior: "smooth" });
+  };
 }
 
-function buildUI() {
-  const state = loadState();
-  const grid = document.getElementById("grid");
+// ─── Hamburger / Dropdown ───
+const hamburgerBtn = document.getElementById("hamburgerBtn");
+const navDropdown  = document.getElementById("navDropdown");
+let dropdownOpen   = false;
+
+function openDropdown()  { dropdownOpen = true;  hamburgerBtn.classList.add("active");    navDropdown.classList.add("open"); }
+function closeDropdown() { dropdownOpen = false; hamburgerBtn.classList.remove("active"); navDropdown.classList.remove("open"); }
+
+hamburgerBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  dropdownOpen ? closeDropdown() : openDropdown();
+});
+
+document.addEventListener("click", (e) => {
+  if (dropdownOpen && !navDropdown.contains(e.target)) closeDropdown();
+});
+
+window.addEventListener("scroll", () => {
+  hamburgerBtn.classList.toggle("scrolled", window.scrollY > 80 && !dropdownOpen);
+}, { passive: true });
+
+// ─── Build ───
+function build() {
+  const state      = load();
+  const dropList   = document.getElementById("dropdownList");
+  const content    = document.getElementById("content");
 
   CHAPTERS.forEach((ch, ci) => {
-    const card = document.createElement("div");
-    card.className = "chapter-card";
+    const id       = `chapter-${ci}`;
+    const initDone = ch.items.filter((_, ii) => state[`${ci}-${ii}`]).length;
+    const initPct  = Math.round((initDone / ch.items.length) * 100);
+    const initSt   = initDone === 0 ? "none" : initDone === ch.items.length ? "done" : "progress";
 
-    const donePct = (() => {
-      const done = ch.items.filter((_, ii) => state[`${ci}-${ii}`]).length;
-      return Math.round((done / ch.items.length) * 100);
-    })();
-
-    card.innerHTML = `
-      <div class="chapter-header">
-        <div class="chapter-title">${ch.title}</div>
-        <div class="chapter-ep">${ch.ep}</div>
-      </div>
-      <div class="chapter-bar-row">
-        <div class="bar-track">
-          <div class="bar-fill" id="bar-${ci}" style="width:${donePct}%"></div>
-        </div>
-        <div class="chapter-pct" id="pct-${ci}">${donePct}%</div>
-      </div>
-      <ul class="items-list" id="list-${ci}"></ul>
+    // ── Dropdown item ──
+    const ditem = document.createElement("button");
+    ditem.className = "dropdown-item";
+    ditem.innerHTML = `
+      <span class="dropdown-status-dot ${initSt}" id="ddot-${ci}"></span>
+      <span class="dropdown-ep">${ch.ep}</span>
+      <span class="dropdown-title">${ch.title}</span>
     `;
+    ditem.addEventListener("click", () => {
+      closeDropdown();
+      const target = document.getElementById(id);
+      if (!target) return;
+      target.classList.add("open");
+      setTimeout(() => {
+        const top = target.getBoundingClientRect().top + window.scrollY - 24;
+        window.scrollTo({ top, behavior: "smooth" });
+      }, 60);
+    });
+    dropList.appendChild(ditem);
 
-    const list = card.querySelector(`#list-${ci}`);
+    // ── Chapter card ──
+    const section = document.createElement("section");
+    section.className = "chapter";
+    section.id = id;
+    section.setAttribute("data-ci", ci);
+    section.innerHTML = `
+      <div class="chapter-head">
+        <div class="chapter-meta">
+          <span class="ep-badge">${ch.ep}</span>
+          <span class="status-badge ${initSt}" id="sbadge-${ci}">${STATUS_LABEL[initSt]}</span>
+        </div>
+        <div class="chapter-toggle">
+          <h2>${ch.title}</h2>
+          <span class="toggle-icon">▼</span>
+        </div>
+      </div>
+      <div class="progress-row">
+        <div class="chapter-bar-track">
+          <div class="chapter-bar-fill" id="cbar-${ci}" style="width:${initPct}%"></div>
+        </div>
+        <span class="chapter-pct-label" id="cpct-${ci}">${initPct}%</span>
+      </div>
+      <div class="chapter-body">
+        <div class="chapter-divider"></div>
+        <ul class="items" id="list-${ci}"></ul>
+        <div class="complete-all-row">
+          <button class="complete-all-btn" id="cab-${ci}">全部學習完成 ✓</button>
+        </div>
+      </div>
+    `;
+    content.appendChild(section);
+
+    section.addEventListener("click", (e) => {
+      if (e.target.closest(".chapter-body")) return;
+      section.classList.toggle("open");
+    });
+
+    const list = section.querySelector(`#list-${ci}`);
     ch.items.forEach((item, ii) => {
       const checked = !!state[`${ci}-${ii}`];
       const li = document.createElement("li");
-      if (checked) li.classList.add("done");
+      li.className = "item" + (checked ? " done" : "");
       li.innerHTML = `
         <input type="checkbox" id="cb-${ci}-${ii}" ${checked ? "checked" : ""} />
         <label for="cb-${ci}-${ii}">${item}</label>
@@ -350,24 +869,39 @@ function buildUI() {
       const cb = li.querySelector("input");
       cb.addEventListener("change", () => {
         li.classList.toggle("done", cb.checked);
-        try {
-          const s = loadState();
-          s[`${ci}-${ii}`] = cb.checked;
-          saveState(s);
-        } catch(e) {}
+        const s = load(); s[`${ci}-${ii}`] = cb.checked; save(s);
         updateChapter(ci);
         updateOverall();
+        const allDone = ch.items.every((_, i) => document.getElementById(`cb-${ci}-${i}`)?.checked);
+        document.getElementById(`cab-${ci}`).disabled = allDone;
       });
       list.appendChild(li);
     });
 
-    grid.appendChild(card);
+    const cabBtn = section.querySelector(`#cab-${ci}`);
+    cabBtn.disabled = initDone === ch.items.length;
+    cabBtn.addEventListener("click", () => {
+      const s = load();
+      ch.items.forEach((_, ii) => {
+        const cb = document.getElementById(`cb-${ci}-${ii}`);
+        if (cb && !cb.checked) {
+          cb.checked = true;
+          cb.closest(".item")?.classList.add("done");
+          s[`${ci}-${ii}`] = true;
+        }
+      });
+      save(s);
+      cabBtn.disabled = true;
+      updateChapter(ci);
+      updateOverall();
+    });
   });
 
   updateOverall();
+  updateContinueCard();
 }
 
-buildUI();
+build();
 </script>
 </body>
 </html>
